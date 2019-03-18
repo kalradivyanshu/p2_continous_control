@@ -9,14 +9,14 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-BUFFER_SIZE = int(1e5)  # replay buffer size
-BATCH_SIZE = 64        # minibatch size
-GAMMA = 0.99            # discount factor
-TAU = 1e-3              # for soft update of target parameters
-LR_ACTOR = 3e-4         # learning rate of the actor 
-LR_CRITIC = 3e-4        # learning rate of the critic
-WEIGHT_DECAY = 1e-5       # L2 weight decay
-UPDATE_DELAY = 2         # Delay for policy update
+BUFFER_SIZE = int(1e5)  
+BATCH_SIZE = 64        
+GAMMA = 0.99            
+TAU = 1e-3             
+LR_ACTOR = 3e-4         
+LR_CRITIC = 3e-4        
+WEIGHT_DECAY = 1e-5       
+UPDATE_DELAY = 2         
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -36,60 +36,45 @@ class Agent():
         self.action_size = action_size
         self.seed = random.seed(random_seed)
 
-        self.actor_local = Actor(state_size, action_size, self.seed).to(device)                  # Initializing the local Actor model
-        self.actor_target = Actor(state_size, action_size, self.seed).to(device)                 # Initializing the target Actor model
-        self.critic_1_local = Critic(state_size, action_size, self.seed).to(device)              # Initializing the local 1st Critic model
-        self.critic_1_target = Critic(state_size, action_size, self.seed).to(device)             # Initializing the target 1st Critic model
-        self.critic_2_local = Critic(state_size, action_size, self.seed).to(device)              # Initializing the local 2nd Critic model
-        self.critic_2_target = Critic(state_size, action_size, self.seed).to(device)             # Initializing the target 2nd Critic model
-        self.actor_optimizer = optim.RMSprop(self.actor_local.parameters(), lr=LR_ACTOR,weight_decay = WEIGHT_DECAY)         # Initializing the optimizer for Actor model's parameters
-        self.critic_1_optimizer = optim.RMSprop(self.critic_1_local.parameters(), lr=LR_CRITIC,weight_decay = WEIGHT_DECAY)  # Initializing the optimizer for 1st Critic model's parameters
-        self.critic_2_optimizer = optim.RMSprop(self.critic_2_local.parameters(), lr=LR_CRITIC,weight_decay = WEIGHT_DECAY)  # Initializing the optimizer for 2nd Critic model's parameters
-        # Noise process
-        self.noise = OUNoise(action_size, random_seed) # Initializing the noise distribution
+        self.actor_local = Actor(state_size, action_size, self.seed).to(device)                  
+        self.actor_target = Actor(state_size, action_size, self.seed).to(device)                 
+        self.critic_1_local = Critic(state_size, action_size, self.seed).to(device)              
+        self.critic_1_target = Critic(state_size, action_size, self.seed).to(device)             
+        self.critic_2_local = Critic(state_size, action_size, self.seed).to(device)             
+        self.critic_2_target = Critic(state_size, action_size, self.seed).to(device)            
+        self.actor_optimizer = optim.RMSprop(self.actor_local.parameters(), lr=LR_ACTOR,weight_decay = WEIGHT_DECAY)         
+        self.critic_1_optimizer = optim.RMSprop(self.critic_1_local.parameters(), lr=LR_CRITIC,weight_decay = WEIGHT_DECAY)  
+        self.critic_2_optimizer = optim.RMSprop(self.critic_2_local.parameters(), lr=LR_CRITIC,weight_decay = WEIGHT_DECAY)  
 
-        # Replay memory
-        self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, random_seed) # Initializing the replay buffer
+        self.noise = OUNoise(action_size, random_seed) 
+
+        
+        self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, random_seed) 
     
     def step(self, state, action, reward, next_state, done,step):
-        """Save experience in replay memory, and use random sample from buffer to learn."""
-        # Save experience / reward
-        self.memory.add(state, action, reward, next_state, done)    # Adding an experience to the replay buffer
+        
+        self.memory.add(state, action, reward, next_state, done)    
 
-        # Learn, if enough samples are available in memory
         if len(self.memory) > BATCH_SIZE:                          
-            experiences = self.memory.sample()                      # Sampling episode from the replay buffer
-            self.learn(experiences, GAMMA,step)                     # Calls the learn function responsible for loss computation and updating the model's parameter
+            experiences = self.memory.sample()                      
+            self.learn(experiences, GAMMA,step)                     
 
     def act(self,state, add_noise=True):
-        """Returns actions for given state as per current policy."""
         state = torch.from_numpy(state).float().to(device)        
         self.actor_local.eval()
         with torch.no_grad():
-            action = self.actor_local(state).cpu().data.numpy()    # Compute the action vector for the given state from Actor
+            action = self.actor_local(state).cpu().data.numpy()   
             #print(action)
         self.actor_local.train()
         if add_noise:
             #print(self.noise.sample())
-            action += self.noise.sample()                          # Add noise to the action vector
-        return np.clip(action, -1, 1)                              # Clamp dimension's of the noise within the range
+            action += self.noise.sample()                          
+        return np.clip(action, -1, 1)                              
 
     def reset(self):
-        self.noise.reset()                                         # Reset the noise parameters to the values to mean and sigma
+        self.noise.reset()                                         
 
     def learn(self, experiences, gamma,step):
-        """Update policy and value parameters using given batch of experience tuples.
-        Q_targets = r + γ * critic_target(next_state, actor_target(next_state))
-        where:
-            actor_target(state) -> action
-            critic_target(state, action) -> Q-value
-
-        Params
-        ======
-            experiences (Tuple[torch.Tensor]): tuple of (s, a, r, s', done) tuples 
-            gamma (float): discount factor
-            step (int): number of steps
-        """
         states, actions, rewards, next_states, dones = experiences
 
         # ---------------------------- update critic ---------------------------- #
@@ -130,15 +115,7 @@ class Agent():
         self.soft_update(self.critic_2_local, self.critic_2_target, TAU)                     
 
     def soft_update(self, local_model, target_model, tau):
-        """Soft update model parameters.
-        θ_target = τ*θ_local + (1 - τ)*θ_target
 
-        Params
-        ======
-            local_model: PyTorch model (weights will be copied from)
-            target_model: PyTorch model (weights will be copied to)
-            tau (float): interpolation parameter 
-        """
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 
@@ -168,12 +145,7 @@ class ReplayBuffer:
     """Fixed-size buffer to store experience tuples."""
 
     def __init__(self, action_size, buffer_size, batch_size, seed):
-        """Initialize a ReplayBuffer object.
-        Params
-        ======
-            buffer_size (int): maximum size of buffer
-            batch_size (int): size of each training batch
-        """
+
         self.action_size = action_size
         self.memory = deque(maxlen=buffer_size)  # internal memory (deque)
         self.batch_size = batch_size

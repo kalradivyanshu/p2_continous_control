@@ -4,16 +4,8 @@ import torch.optim as optim
 import numpy as np
 
 class Actor(nn.Module):
-    """Dueling Double Deep Q Network Model."""
 
     def __init__(self, state_size, action_size, seed):
-        """Initialize parameters and build model.
-        Params
-        ======
-            state_size (int): Dimension of each state
-            action_size (int): Dimension of each action
-            seed (int): Random seed
-        """
         super(Actor, self).__init__()
         self.state_size = state_size
         self.fc1 = nn.Linear(state_size,400)
@@ -29,16 +21,8 @@ class Actor(nn.Module):
         return x
 
 class Critic(nn.Module):
-    """Dueling Double Deep Q Network Model."""
 
     def __init__(self, state_size, action_size, seed):
-        """Initialize parameters and build model.
-        Params
-        ======
-            state_size (int): Dimension of each state
-            action_size (int): Dimension of each action
-            seed (int): Random seed
-        """
         super(Critic, self).__init__()
         self.state_size = state_size
         self.fc1 = nn.Linear(state_size+action_size,400)
