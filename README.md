@@ -29,3 +29,9 @@ Pytorch Implementation of Twin Delayed DDPG for Udacity Deep RL course by Divyan
 - [x] Delayed Policy Updates
 - [x] Two Critic Networks
 
+# How to run
+step 1 : Install all the dependencies 
+step 2 : git clone
+step 3 : jupyter notebook 
+step 4 : Run all cells in the CC.ipynb file
+
